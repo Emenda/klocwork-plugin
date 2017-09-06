@@ -7,16 +7,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import hudson.AbortException;
 import hudson.Launcher;
-import hudson.Launcher.ProcStarter;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
-import hudson.Proc;
-import hudson.util.ArgumentListBuilder;
-import hudson.util.FormValidation;
-import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
 import hudson.model.Run;
 import hudson.model.TaskListener;
 import hudson.tasks.Builder;
@@ -26,21 +20,9 @@ import jenkins.tasks.SimpleBuildStep;
 import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.QueryParameter;
 
-import javax.servlet.ServletException;
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.StringReader;
+import java.io.*;
 import java.lang.InterruptedException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-
-import java.util.Arrays;
 
 public class KlocworkDesktopBuilder extends Builder implements SimpleBuildStep {
 
@@ -110,26 +92,44 @@ public class KlocworkDesktopBuilder extends Builder implements SimpleBuildStep {
                 // check diff file list and get list of files to analyse, if none,
                 // diffList will be empty
                 diffList = desktopConfig.getKwcheckDiffList(envVars, workspace, launcher);
-                // if there are no files to analyse, do not analyse!
-                if (StringUtils.isEmpty(diffList)) {
-                    // we do not need to do anything!
-                    logger.logMessage("Incremental analysis did not detect any " +
-                        "changed files in the build specification. Skipping the analysis");
-
-                    // skip analysis and instead run "kwcheck list" to generate
-                    // XML reports file
+                // if there are files to analyse, run kwcheck run
+                if (!StringUtils.isEmpty(diffList)) {
                     KlocworkUtil.executeCommand(launcher, listener,
                             workspace, envVars,
-                            desktopConfig.getKwcheckListCmd(envVars, workspace, diffList));
-
-                    return;
+                            desktopConfig.getKwcheckRunCmd(envVars, workspace, diffList));
                 }
+                else{
+                    // we do not need to do anything!
+                    logger.logMessage("Incremental analysis did not detect any " +
+                            "changed files in the build specification. Skipping the analysis");
+                }
+            }
+            else{
+                KlocworkUtil.executeCommand(launcher, listener,
+                        workspace, envVars,
+                        desktopConfig.getKwcheckRunCmd(envVars, workspace, diffList));
+            }
+
+            // Output any local issues
+            //TODO: Clean up here
+//                KlocworkUtil.executeCommand(launcher, listener,
+//                        workspace, envVars,
+//                        desktopConfig.getKwcheckListCmd(envVars, workspace, diffList));
+            ByteArrayOutputStream kwcheckListOutputStream = KlocworkUtil.executeCommandParseOutput(launcher,
+                    workspace, envVars,
+                    desktopConfig.getKwcheckListCmd(envVars, workspace, diffList));
+            if(kwcheckListOutputStream != null){
+                KlocworkUtil.generateKwListOutput(
+                        envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile())),
+                        kwcheckListOutputStream,
+                        listener
+                );
+
+                //if xml output
+                //else just console
             }
 
 
-            KlocworkUtil.executeCommand(launcher, listener,
-                    workspace, envVars,
-                    desktopConfig.getKwcheckRunCmd(envVars, workspace, diffList));
         }  catch (IOException | InterruptedException ex) {
             // throw new AbortException(KlocworkUtil.exceptionToString(ex));
             throw new AbortException(ex.getMessage());
