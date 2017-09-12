@@ -26,10 +26,7 @@ import org.w3c.dom.Element;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import java.io.*;
@@ -196,46 +193,77 @@ public class KlocworkUtil {
 	}
 
 	//TODO: Clean up here
-	public static int generateKwListOutput(String xmlReport, ByteArrayOutputStream outputStream, TaskListener listener){
+	public static int generateKwListOutput(File xmlReport, ByteArrayOutputStream outputStream, TaskListener listener){
         int returnCode = 0;
         InputStream inputStream = null;
         BufferedReader bufferedReader = null;
         try {
-            DocumentBuilderFactory dbFactory =
-            DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
             DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
             Document doc = dBuilder.newDocument();
             // root element
             Element rootElement = doc.createElement("errorList");
+            doc.appendChild(rootElement);
 
             inputStream = new ByteArrayInputStream(outputStream.toByteArray());
             bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             String line = null;
+
+            listener.getLogger().println("CODE\tMESSAGE\tFILE\tMETHOD");
+
             while((line = bufferedReader.readLine()) != null){
                 String[] kwIssue = line.split(";");
                 //Is in expected format
                 if(kwIssue.length > 13){
                     Element issue = doc.createElement("problem");
                     rootElement.appendChild(issue);
-                    issue.appendChild(doc.createElement("problemID").appendChild(doc.createTextNode(kwIssue[0])));
-                    issue.appendChild(doc.createElement("file").appendChild(doc.createTextNode(kwIssue[1])));
-                    issue.appendChild(doc.createElement("method").appendChild(doc.createTextNode(kwIssue[2])));
-                    issue.appendChild(doc.createElement("code").appendChild(doc.createTextNode(kwIssue[7])));
-                    issue.appendChild(doc.createElement("message").appendChild(doc.createTextNode(kwIssue[11])));
-                    issue.appendChild(doc.createElement("citingStatus").appendChild(doc.createTextNode(kwIssue[13])));
-                    issue.appendChild(doc.createElement("severity").appendChild(doc.createTextNode(kwIssue[4])));
-                    issue.appendChild(doc.createElement("severitylevel").appendChild(doc.createTextNode(kwIssue[5])));
-                    String message = kwIssue[7]+"\t"+kwIssue[11]+"\t"+kwIssue[1]+"\t"+kwIssue[2];
-                    listener.getLogger().println(message);
+
+                    Element problemId = doc.createElement("problemID");
+                    problemId.appendChild(doc.createTextNode(kwIssue[0]));
+                    issue.appendChild(problemId);
+
+                    Element file = doc.createElement("file");
+                    file.appendChild(doc.createTextNode(kwIssue[1]));
+                    issue.appendChild(file);
+
+                    Element method = doc.createElement("method");
+                    method.appendChild(doc.createTextNode(kwIssue[2]));
+                    issue.appendChild(method);
+
+                    Element code = doc.createElement("code");
+                    code.appendChild(doc.createTextNode(kwIssue[7]));
+                    issue.appendChild(code);
+
+                    Element message = doc.createElement("message");
+                    message.appendChild(doc.createTextNode(kwIssue[11]));
+                    issue.appendChild(message);
+
+                    Element citingStatus = doc.createElement("citingStatus");
+                    citingStatus.appendChild(doc.createTextNode(kwIssue[13]));
+                    issue.appendChild(citingStatus);
+
+                    Element severity = doc.createElement("severity");
+                    severity.appendChild(doc.createTextNode(kwIssue[4]));
+                    issue.appendChild(severity);
+
+                    Element severitylevel = doc.createElement("severitylevel");
+                    severitylevel.appendChild(doc.createTextNode(kwIssue[5]));
+                    issue.appendChild(severitylevel);
+
+                    String consoleMessage = kwIssue[7]+"\t"+kwIssue[11]+"\t"+kwIssue[1]+"\t"+kwIssue[2];
+                    listener.getLogger().println(consoleMessage);
                 }
-//                listener.getLogger().println(line);
             }
             // write the content into xml file
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
+            Transformer tf = TransformerFactory.newInstance().newTransformer();
+            tf.setOutputProperty(OutputKeys.INDENT, "yes");
+            tf.setOutputProperty(OutputKeys.METHOD, "xml");
+            tf.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
             DOMSource source = new DOMSource(doc);
-            StreamResult result = new StreamResult(new File(xmlReport));
-            transformer.transform(source, result);
+
+            //check file is relative or absolute
+            StreamResult result = new StreamResult(xmlReport);
+            tf.transform(source, result);
         } catch (IOException e) {
             returnCode = 1;
             listener.getLogger().println(e.getMessage());

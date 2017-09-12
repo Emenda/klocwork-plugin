@@ -119,8 +119,12 @@ public class KlocworkDesktopBuilder extends Builder implements SimpleBuildStep {
                     workspace, envVars,
                     desktopConfig.getKwcheckListCmd(envVars, workspace, diffList));
             if(kwcheckListOutputStream != null){
+                File xml = new File(envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile())));
+                if(!xml.isAbsolute()){
+                    xml = new File (workspace.getRemote() + File.separator + envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile())));
+                }
                 KlocworkUtil.generateKwListOutput(
-                        envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile())),
+                        xml,
                         kwcheckListOutputStream,
                         listener
                 );
