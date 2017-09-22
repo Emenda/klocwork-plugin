@@ -123,7 +123,8 @@ public class KlocworkBuildWrapper extends SimpleBuildWrapper {
                 + install.getName() + "\"");
                 String separator = (launcher.isUnix()) ? ":" : ";";
                 String paths = install.getPaths()+separator;
-                context.env("PATH+KW", paths);
+                String path = initialEnvironment.get("PATH");
+                context.env("PATH", paths+path);
             }
 
             if (StringUtils.isEmpty(ltoken)) {

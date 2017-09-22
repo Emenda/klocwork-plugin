@@ -3,6 +3,7 @@ package com.emenda.klocwork.util;
 import com.emenda.klocwork.KlocworkConstants;
 import com.emenda.klocwork.KlocworkServerAnalysisBuilder;
 
+import jenkins.util.xml.XMLUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import hudson.AbortException;
@@ -22,6 +23,7 @@ import hudson.tasks.Builder;
 import hudson.util.ArgumentListBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.xml.sax.SAXException;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,6 +31,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import java.io.*;
 import java.lang.InterruptedException;
 import java.net.MalformedURLException;
@@ -36,6 +39,8 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class KlocworkUtil {
 
@@ -188,91 +193,122 @@ public class KlocworkUtil {
 
 	public static String getAbsolutePath(EnvVars envVars, String path) {
 		String absolutePath = path;
-
 		return absolutePath;
 	}
 
-	//TODO: Clean up here
-	public static int generateKwListOutput(File xmlReport, ByteArrayOutputStream outputStream, TaskListener listener){
+	public static int generateKwListOutput(FilePath xmlReport, ByteArrayOutputStream outputStream, TaskListener listener){
         int returnCode = 0;
         InputStream inputStream = null;
         BufferedReader bufferedReader = null;
+        BufferedWriter bufferedWriter = null;
         try {
-            DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-            DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-            Document doc = dBuilder.newDocument();
-            // root element
-            Element rootElement = doc.createElement("errorList");
-            doc.appendChild(rootElement);
-
+            bufferedWriter = new BufferedWriter(new OutputStreamWriter(xmlReport.write()));
+            bufferedWriter.write("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>");
+            bufferedWriter.newLine();
+            bufferedWriter.write("<errorList>");
+            bufferedWriter.newLine();
             inputStream = new ByteArrayInputStream(outputStream.toByteArray());
             bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
             String line = null;
-
-            listener.getLogger().println("CODE\tMESSAGE\tFILE\tMETHOD");
-
             while((line = bufferedReader.readLine()) != null){
-                String[] kwIssue = line.split(";");
-                //Is in expected format
-                if(kwIssue.length > 13){
-                    Element issue = doc.createElement("problem");
-                    rootElement.appendChild(issue);
-
-                    Element problemId = doc.createElement("problemID");
-                    problemId.appendChild(doc.createTextNode(kwIssue[0]));
-                    issue.appendChild(problemId);
-
-                    Element file = doc.createElement("file");
-                    file.appendChild(doc.createTextNode(kwIssue[1]));
-                    issue.appendChild(file);
-
-                    Element method = doc.createElement("method");
-                    method.appendChild(doc.createTextNode(kwIssue[2]));
-                    issue.appendChild(method);
-
-                    Element code = doc.createElement("code");
-                    code.appendChild(doc.createTextNode(kwIssue[7]));
-                    issue.appendChild(code);
-
-                    Element message = doc.createElement("message");
-                    message.appendChild(doc.createTextNode(kwIssue[11]));
-                    issue.appendChild(message);
-
-                    Element citingStatus = doc.createElement("citingStatus");
-                    citingStatus.appendChild(doc.createTextNode(kwIssue[13]));
-                    issue.appendChild(citingStatus);
-
-                    Element severity = doc.createElement("severity");
-                    severity.appendChild(doc.createTextNode(kwIssue[4]));
-                    issue.appendChild(severity);
-
-                    Element severitylevel = doc.createElement("severitylevel");
-                    severitylevel.appendChild(doc.createTextNode(kwIssue[5]));
-                    issue.appendChild(severitylevel);
-
-                    String consoleMessage = kwIssue[7]+"\t"+kwIssue[11]+"\t"+kwIssue[1]+"\t"+kwIssue[2];
-                    listener.getLogger().println(consoleMessage);
+                if(line.trim().startsWith("<problem>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                }
+                else if(line.trim().startsWith("<problemID>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<file>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<method>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<code>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<message>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<citingStatus>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<severity>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("<severitylevel>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    Matcher matcher = Pattern.compile("<.+>(.+)<.+>").matcher(line);
+                    if (matcher.find())
+                    {
+                        listener.getLogger().print(matcher.group(1)+"\t");
+                    }
+                }
+                else if(line.trim().startsWith("</problem>")){
+                    bufferedWriter.write(line);
+                    bufferedWriter.newLine();
+                    listener.getLogger().println();
                 }
             }
-            // write the content into xml file
-            Transformer tf = TransformerFactory.newInstance().newTransformer();
-            tf.setOutputProperty(OutputKeys.INDENT, "yes");
-            tf.setOutputProperty(OutputKeys.METHOD, "xml");
-            tf.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "4");
-            DOMSource source = new DOMSource(doc);
-
-            //check file is relative or absolute
-            StreamResult result = new StreamResult(xmlReport);
-            tf.transform(source, result);
-        } catch (IOException e) {
+            bufferedWriter.write("</errorList>");
+            bufferedWriter.newLine();
+        } catch (IOException | InterruptedException e) {
             returnCode = 1;
             listener.getLogger().println(e.getMessage());
-        } catch (ParserConfigurationException | TransformerException e) {
-            e.printStackTrace();
         } finally {
             try{
                 if(inputStream != null) {
                     inputStream.close();
+                }
+            } catch (Exception ex){
+                returnCode = 1;
+            }
+            try{
+                if(bufferedWriter != null) {
+                    bufferedWriter.close();
                 }
             } catch (Exception ex){
                 returnCode = 1;

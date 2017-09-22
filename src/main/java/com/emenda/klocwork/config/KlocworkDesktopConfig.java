@@ -107,10 +107,7 @@ public class KlocworkDesktopConfig extends AbstractDescribableImpl<KlocworkDeskt
             kwcheckRunCmd.add("--license-port", licensePort);
         }
 
-        //TODO: Cleanup here
-//        String xmlReport = envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(reportFile));
-//        kwcheckRunCmd.add("-F", "xml", "--report", xmlReport);
-        kwcheckRunCmd.add("-F", "scriptable");
+        kwcheckRunCmd.add("-F", "xml");
 
         if (!StringUtils.isEmpty(additionalOpts)) {
             kwcheckRunCmd.addTokenized(envVars.expand(additionalOpts));

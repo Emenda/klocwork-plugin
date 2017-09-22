@@ -111,31 +111,29 @@ public class KlocworkDesktopBuilder extends Builder implements SimpleBuildStep {
             }
 
             // Output any local issues
-            //TODO: Clean up here
-//                KlocworkUtil.executeCommand(launcher, listener,
-//                        workspace, envVars,
-//                        desktopConfig.getKwcheckListCmd(envVars, workspace, diffList));
             ByteArrayOutputStream kwcheckListOutputStream = KlocworkUtil.executeCommandParseOutput(launcher,
                     workspace, envVars,
                     desktopConfig.getKwcheckListCmd(envVars, workspace, diffList));
             if(kwcheckListOutputStream != null){
-                File xml = new File(envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile())));
-                if(!xml.isAbsolute()){
-                    xml = new File (workspace.getRemote() + File.separator + envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile())));
+                FilePath xmlReport;
+                String path = envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(desktopConfig.getReportFile()));
+                File isAbs = new File(path);
+                if(isAbs.isAbsolute()){
+                    xmlReport = new FilePath (launcher.getChannel(), path);
+                }
+                else{
+                    xmlReport = new FilePath (workspace, path);
                 }
                 KlocworkUtil.generateKwListOutput(
-                        xml,
+                        xmlReport,
                         kwcheckListOutputStream,
                         listener
                 );
-
-                //if xml output
-                //else just console
             }
-
-
+            else{
+                logger.logMessage("Unable to generate diff analysis output");
+            }
         }  catch (IOException | InterruptedException ex) {
-            // throw new AbortException(KlocworkUtil.exceptionToString(ex));
             throw new AbortException(ex.getMessage());
         }
 
