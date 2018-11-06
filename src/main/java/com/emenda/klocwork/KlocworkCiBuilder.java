@@ -127,7 +127,7 @@ public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
             // Output any local issues
             ByteArrayOutputStream kwcheckListOutputStream = KlocworkUtil.executeCommandParseOutput(launcher,
                     workspace, envVars,
-                    ciConfig.getCiToolListCmd(envVars, workspace, diffList));
+                    ciConfig.getCiToolListCmd(envVars, workspace, diffList, launcher, logger));
             if(kwcheckListOutputStream != null){
                 FilePath xmlReport;
                 String path = envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(ciConfig.getReportFile()));

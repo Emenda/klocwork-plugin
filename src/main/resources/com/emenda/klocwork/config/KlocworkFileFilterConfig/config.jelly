@@ -1,0 +1,25 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+
+    <f:entry title="${%Include files}" field="include">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Exclude files}" field="exclude">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="" field="caseSensitive">
+        <f:checkbox name="caseSensitive" checked="${instance.caseSensitive}" title="${%Case sensitive}"/>
+    </f:entry>
+    <f:entry title="" field="slashInsensitive">
+        <f:checkbox name="slashInsensitive" checked="${instance.slashInsensitive}" title="${%File separator insensitive}"/>
+    </f:entry>
+    <f:entry title="${%Modules}" field="modules">
+        <f:textbox/>
+    </f:entry>
+    <f:entry title="" field="checkModule">
+        <f:checkbox name="checkModule" checked="${instance.checkModule}" title="${%Check for wrong module}"/>
+    </f:entry>
+
+
+</j:jelly>

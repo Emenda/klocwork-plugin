@@ -2,6 +2,7 @@
 package com.emenda.klocwork.config;
 
 import com.emenda.klocwork.KlocworkConstants;
+import com.emenda.klocwork.KlocworkLogger;
 import com.emenda.klocwork.util.KlocworkBuildSpecParser;
 import com.emenda.klocwork.util.KlocworkUtil;
 import hudson.*;
@@ -12,9 +13,11 @@ import hudson.model.Descriptor;
 import hudson.model.Items;
 import hudson.model.Run;
 import hudson.util.ArgumentListBuilder;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
@@ -28,11 +31,13 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
     private final String additionalOpts;
     private final boolean incrementalAnalysis;
     private final KlocworkDiffAnalysisConfig diffAnalysisConfig;
+    private final boolean fileFilter;
+    private final KlocworkFileFilterConfig fileFilterConfig;
     private String ciTool;
 
     @DataBoundConstructor
-    public KlocworkCiConfig(String buildSpec, String projectDir, boolean cleanupProject, String reportFile, String additionalOpts,
-                            boolean incrementalAnalysis, KlocworkDiffAnalysisConfig diffAnalysisConfig, String ciTool) {
+    public KlocworkCiConfig(String buildSpec, String projectDir, boolean cleanupProject, String reportFile, String additionalOpts, boolean incrementalAnalysis,
+                            KlocworkDiffAnalysisConfig diffAnalysisConfig, boolean fileFilter, KlocworkFileFilterConfig fileFilterConfig, String ciTool) {
         this.buildSpec = buildSpec;
         this.projectDir = projectDir;
         this.cleanupProject = cleanupProject;
@@ -40,6 +45,8 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
         this.additionalOpts = additionalOpts;
         this.incrementalAnalysis = incrementalAnalysis;
         this.diffAnalysisConfig = diffAnalysisConfig;
+        this.fileFilter = fileFilter;
+        this.fileFilterConfig = fileFilterConfig;
         this.ciTool = ciTool;
     }
 
@@ -91,7 +98,7 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
     }
 
     public ArgumentListBuilder getCiToolListCmd(EnvVars envVars, FilePath workspace,
-                                                String diffList)
+                                                String diffList, Launcher launcher, KlocworkLogger logger)
                                         throws IOException, InterruptedException {
         ArgumentListBuilder kwcheckRunCmd =
             new ArgumentListBuilder(ciTool, "list");
@@ -111,10 +118,23 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
         if (!StringUtils.isEmpty(additionalOpts)) {
             kwcheckRunCmd.addTokenized(envVars.expand(additionalOpts));
         }
-
-        // add list of changed files to end of kwcheck run command
+        if (fileFilter) {
+            List<String> files;
+            if (incrementalAnalysis) {
+                File diff = new File(diffAnalysisConfig.getDiffFileList());
+                if (diff.isAbsolute()) {
+                    files = fileFilterConfig.getLookFiles(new FilePath(diff), true);
+                }
+                else {
+                    files = fileFilterConfig.getLookFiles(new FilePath(new File(workspace.getRemote(), diff.toString())), true);
+                }
+            }
+            else {
+                files = fileFilterConfig.getLookFiles(new FilePath(getKwlpDir(workspace, envVars), "workingcache/tables/file.dat"), false);
+            }
+            diffList = fileFilterConfig.createDiffFileList(files, envVars, workspace, launcher, logger);
+        }
         kwcheckRunCmd.addTokenized(diffList);
-
         return kwcheckRunCmd;
     }
 
@@ -244,6 +264,8 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
     public String getAdditionalOpts() { return additionalOpts; }
     public boolean getIncrementalAnalysis() { return incrementalAnalysis; }
     public KlocworkDiffAnalysisConfig getDiffAnalysisConfig() { return diffAnalysisConfig; }
+    public boolean isFileFilter() { return fileFilter; }
+    public KlocworkFileFilterConfig getFileFilterConfig() { return fileFilterConfig; }
     public String getCiTool() { return ciTool; }
 
     public void setCiTool(String tool) {

@@ -10,6 +10,10 @@
         <f:property field="diffAnalysisConfig"/>
     </f:optionalBlock>
 
+    <f:optionalBlock field="fileFilter" title="${%Filter Result Files}" checked="${instance.fileFilter}" inline="true">
+        <f:property field="fileFilterConfig"/>
+    </f:optionalBlock>
+
     <f:advanced>
         <f:entry title="${%Local Project Directory}" field="projectDirConfig">
             <table style="width:100%">
