@@ -7,9 +7,23 @@
     <f:entry title="${%Project Filter}" field="projectRegexp">
         <f:textbox/>
     </f:entry>
-    <f:entry title="${%Last Sync}" field="lastSync">
-        <f:textbox default="03-00-0000 00:00:00"/>
+
+    <j:set var="lastSyncType" value="${instance.lastSyncType==null ? 'lastBuild' : instance.lastSyncType}" />
+
+    <f:entry title="" description="">
+        <table width="100%">
+            <f:radioBlock checked="${lastSyncTypeValue=='lastBuild'}" name="lastSyncType" title="${%Latest Build}" value="lastBuild" inline="true">
+            </f:radioBlock>
+            <f:radioBlock checked="${lastSyncTypeValue=='lastSuccess'}" name="lastSyncType" title="${%Latest Successful Build}" value="lastSuccess" inline="true">
+            </f:radioBlock>
+            <f:radioBlock checked="${lastSyncTypeValue=='manual'}" name="lastSyncType" title="${%Manual}" value="manual" inline="true">
+                <f:entry title="${%Last Sync}" field="manSync">
+                    <f:textbox default="03-00-0000 00:00:00"/>
+                </f:entry>
+            </f:radioBlock>
+        </table>
     </f:entry>
+
     <f:advanced>
         <f:entry title="${%Sync Statuses}" field="syncStatusesField">
             <table>

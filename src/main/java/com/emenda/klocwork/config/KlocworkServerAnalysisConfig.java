@@ -20,19 +20,18 @@ public class KlocworkServerAnalysisConfig extends AbstractDescribableImpl<Klocwo
 
     private final String buildSpec;
     private final String tablesDir;
-    private final boolean incrementalAnalysis;
+    private final String analysisType;
     private final boolean ignoreCompileErrors;
     private final String importConfig;
     private final String additionalOpts;
     private final boolean disableKwdeploy;
 
     @DataBoundConstructor
-    public KlocworkServerAnalysisConfig(String buildSpec, String tablesDir,
-            boolean incrementalAnalysis, boolean ignoreCompileErrors,
-            String importConfig, String additionalOpts, boolean disableKwdeploy) {
+    public KlocworkServerAnalysisConfig(String buildSpec, String tablesDir, String analysisType,
+            boolean ignoreCompileErrors, String importConfig, String additionalOpts, boolean disableKwdeploy) {
         this.buildSpec = buildSpec;
         this.tablesDir = tablesDir;
-        this.incrementalAnalysis = incrementalAnalysis;
+        this.analysisType = analysisType;
         this.ignoreCompileErrors = ignoreCompileErrors;
         this.importConfig = importConfig;
         this.additionalOpts = additionalOpts;
@@ -85,9 +84,9 @@ public class KlocworkServerAnalysisConfig extends AbstractDescribableImpl<Klocwo
             }
         }
 
-        if (incrementalAnalysis) {
+        if (analysisType.equals("incremental")) {
             kwbuildprojectCmd.add("--incremental");
-        } else {
+        } else if (analysisType.equals("force")){
             kwbuildprojectCmd.add("--force");
         }
         if (!StringUtils.isEmpty(additionalOpts)) {
@@ -105,7 +104,7 @@ public class KlocworkServerAnalysisConfig extends AbstractDescribableImpl<Klocwo
 
     public String getBuildSpec() { return buildSpec; }
     public String getTablesDir() { return tablesDir; }
-    public boolean getIncrementalAnalysis() { return incrementalAnalysis; }
+    public String getAnalysisType() { return analysisType; }
     public boolean getIgnoreCompileErrors() { return ignoreCompileErrors; }
     public String getImportConfig() { return importConfig; }
     public String getAdditionalOpts() { return additionalOpts; }

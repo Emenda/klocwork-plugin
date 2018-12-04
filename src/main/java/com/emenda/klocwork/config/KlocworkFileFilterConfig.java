@@ -75,13 +75,13 @@ public class KlocworkFileFilterConfig extends AbstractDescribableImpl<KlocworkFi
                     break;
                 }
                 else {
-                    if (!s.endsWith(">"))
+                    if (!s.endsWith(">")) {
                         if (incremental) {
                             files.add(s);
-                        }
-                        else {
+                        } else {
                             files.add(s.split(";")[1]);
                         }
+                    }
                 }
             }
             read.close();

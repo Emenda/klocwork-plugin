@@ -51,7 +51,7 @@ public class KlocworkXSyncBuilder extends Builder implements SimpleBuildStep {
                 workspace, envVars,
                 syncConfig.getVersionCmd());
         KlocworkUtil.executeCommand(launcher, listener,
-                 workspace, envVars, syncConfig.getxsyncCmd(envVars, launcher));
+                 workspace, envVars, syncConfig.getxsyncCmd(envVars, launcher, workspace, logger));
 
     }
 

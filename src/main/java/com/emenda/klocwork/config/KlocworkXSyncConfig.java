@@ -2,12 +2,10 @@
 package com.emenda.klocwork.config;
 
 import com.emenda.klocwork.KlocworkConstants;
+import com.emenda.klocwork.KlocworkLogger;
 import com.emenda.klocwork.services.KlocworkApiConnection;
 import com.emenda.klocwork.util.KlocworkUtil;
-import hudson.AbortException;
-import hudson.EnvVars;
-import hudson.Extension;
-import hudson.Launcher;
+import hudson.*;
 import hudson.model.AbstractDescribableImpl;
 import hudson.model.Descriptor;
 import hudson.util.ArgumentListBuilder;
@@ -22,7 +20,11 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 
 import javax.servlet.ServletException;
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -32,7 +34,8 @@ import java.util.regex.Pattern;
 public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncConfig> {
 
     private final boolean dryRun;
-    private final String lastSync;
+    private final String lastSyncType;
+    private final String manSync;
     private final String projectRegexp;
     private final boolean statusAnalyze;
     private final boolean statusIgnore;
@@ -45,7 +48,7 @@ public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncCo
     private final String additionalOpts;
 
     @DataBoundConstructor
-    public KlocworkXSyncConfig(boolean dryRun, String lastSync, String projectRegexp,
+    public KlocworkXSyncConfig(boolean dryRun, String lastSyncType, String manSync, String projectRegexp,
                 boolean statusAnalyze, boolean statusIgnore,
                 boolean statusNotAProblem, boolean statusFix,
                 boolean statusFixInNextRelease, boolean statusFixInLaterRelease,
@@ -53,7 +56,8 @@ public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncCo
                 String additionalOpts) {
 
         this.dryRun = dryRun;
-        this.lastSync = lastSync;
+        this.lastSyncType = lastSyncType;
+        this.manSync = manSync;
         this.projectRegexp = projectRegexp;
         this.statusAnalyze = statusAnalyze;
         this.statusIgnore = statusIgnore;
@@ -72,15 +76,19 @@ public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncCo
         return versionCmd;
     }
 
-    public ArgumentListBuilder getxsyncCmd(EnvVars envVars, Launcher launcher)
+    public ArgumentListBuilder getxsyncCmd(EnvVars envVars, Launcher launcher, FilePath workspace, KlocworkLogger logger)
                                             throws AbortException {
 
         ArgumentListBuilder xsyncCmd = new ArgumentListBuilder("kwxsync");
         String projectList = getProjectList(envVars, launcher);
-        String lastSyncArg = getLastSyncDateDiff();
+        String lastSyncArg = getLastSyncDateDiff(envVars, workspace, logger);
 
         xsyncCmd.add("--url", envVars.get(KlocworkConstants.KLOCWORK_URL));
-        xsyncCmd.add("--last-sync", lastSyncArg);
+        if (lastSyncArg.equals("full")) {
+            xsyncCmd.add("--full");
+        } else {
+            xsyncCmd.add("--last-sync", lastSyncArg);
+        }
 
         if (dryRun) {
             xsyncCmd.add("--dry");
@@ -163,7 +171,69 @@ public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncCo
         return projectList.toString();
     }
 
-    private String getLastSyncDateDiff() throws NumberFormatException, AbortException {
+    private String getLastSyncDateDiff(EnvVars envVars, FilePath workspace, KlocworkLogger logger) throws NumberFormatException, AbortException {
+        String lastSync = manSync;
+        if (!lastSyncType.equals("manual")) {
+            String jobName = envVars.get("BUILD_TAG").split("-")[1];
+            FilePath jobInfoDir = new FilePath(workspace.getParent().getParent().child("jobs"), jobName);
+            jobInfoDir = new FilePath(jobInfoDir, "builds");
+            String jobNumber = envVars.get("BUILD_ID");
+
+            if (lastSyncType.equals("lastBuild")) {
+                try {
+                    int job = Integer.parseInt(jobNumber);
+                    jobNumber = Integer.toString(job-1);
+                } catch (NumberFormatException e) {e.printStackTrace();}
+            }
+            else if (lastSyncType.equals("lastSuccess")) {
+                FilePath lastSuccess = new FilePath(jobInfoDir, "lastSuccessfulBuild");
+                FileReader read;
+                BufferedReader input;
+                try {
+                    read = new FileReader(lastSuccess.getRemote());
+                    input = new BufferedReader(read);
+                    jobNumber = input.readLine();
+                    read.close();
+                    input.close();
+                } catch (IOException e) {e.printStackTrace();}
+            }
+            if (jobNumber.startsWith("-")) {
+                logger.logMessage("No Build available, will do full synchronisation");
+                return "full";
+            }
+            FilePath jobInfo = new FilePath(jobInfoDir, jobNumber);
+            jobInfo = new FilePath(jobInfo, "build.xml");
+
+            FileReader read;
+            BufferedReader input;
+            String timestamp = "0";
+            try {
+                read = new FileReader(jobInfo.getRemote());
+                input = new BufferedReader(read);
+                String s;
+                while (true) {
+                    s = input.readLine();
+                    if (s == null) {
+                        break;
+                    }
+                    else {
+                        if (s.matches(".*<timestamp>.*")){
+                            timestamp = s;
+                            break;
+                        }
+                    }
+                }
+                read.close();
+                input.close();
+            } catch (IOException e) {e.printStackTrace();}
+            timestamp = timestamp.replaceAll(".*<timestamp>", "");
+            timestamp = timestamp.replaceAll("</timestamp>.*", "");
+            Timestamp stamp = new Timestamp(Long.parseLong(timestamp));
+            Date jobTime = new Date(stamp.getTime());
+            SimpleDateFormat sdf = new SimpleDateFormat(KlocworkConstants.LASTSYNC_FORMAT);
+            lastSync = sdf.format(jobTime);
+        }
+
         Pattern p = Pattern.compile(KlocworkConstants.REGEXP_LASTSYNC);
         Matcher m = p.matcher(lastSync);
         if (!m.find()) {
@@ -194,8 +264,8 @@ public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncCo
         if (!isStringNumZero(m.group(KlocworkConstants.REGEXP_GROUP_SECOND))) {
             date = date.minusSeconds(Integer.valueOf(m.group(KlocworkConstants.REGEXP_GROUP_SECOND)));
         }
-
         return dtf.print(date);
+
     }
 
     private boolean isStringNumZero(String num) {
@@ -207,7 +277,8 @@ public class KlocworkXSyncConfig extends AbstractDescribableImpl<KlocworkXSyncCo
     }
 
     public boolean getDryRun() { return dryRun; }
-    public String getLastSync() { return lastSync; }
+    public String getLastSyncType() { return lastSyncType; }
+    public String getManSync() { return manSync; }
     public String getProjectRegexp() { return projectRegexp; }
     public boolean getStatusAnalyze() { return statusAnalyze; }
     public boolean getStatusIgnore() { return statusIgnore; }

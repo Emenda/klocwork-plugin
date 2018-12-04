@@ -27,6 +27,8 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
     private final String buildSpec;
     private final String projectDir;
     private final boolean cleanupProject;
+    private final boolean ignoreBuildErrors;
+    private final boolean ignoreParseErrors;
     private final String reportFile;
     private final String additionalOpts;
     private final boolean incrementalAnalysis;
@@ -36,11 +38,14 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
     private String ciTool;
 
     @DataBoundConstructor
-    public KlocworkCiConfig(String buildSpec, String projectDir, boolean cleanupProject, String reportFile, String additionalOpts, boolean incrementalAnalysis,
+    public KlocworkCiConfig(String buildSpec, String projectDir, boolean cleanupProject, boolean ignoreBuildErrors,
+                            boolean ignoreParseErrors, String reportFile, String additionalOpts, boolean incrementalAnalysis,
                             KlocworkDiffAnalysisConfig diffAnalysisConfig, boolean fileFilter, KlocworkFileFilterConfig fileFilterConfig, String ciTool) {
         this.buildSpec = buildSpec;
         this.projectDir = projectDir;
         this.cleanupProject = cleanupProject;
+        this.ignoreBuildErrors = ignoreBuildErrors;
+        this.ignoreParseErrors = ignoreParseErrors;
         this.reportFile = reportFile;
         this.additionalOpts = additionalOpts;
         this.incrementalAnalysis = incrementalAnalysis;
@@ -260,6 +265,8 @@ public class KlocworkCiConfig extends AbstractDescribableImpl<KlocworkCiConfig> 
     public String getBuildSpec() { return buildSpec; }
     public String getProjectDir() { return projectDir; }
     public boolean getCleanupProject() { return cleanupProject; }
+    public boolean isIgnoreBuildErrors() { return ignoreBuildErrors; }
+    public boolean isIgnoreParseErrors() { return ignoreParseErrors; }
     public String getReportFile() { return reportFile; }
     public String getAdditionalOpts() { return additionalOpts; }
     public boolean getIncrementalAnalysis() { return incrementalAnalysis; }

@@ -5,8 +5,19 @@
     <f:entry title="${%Klocwork Build Specification}" field="buildSpec">
         <f:textbox default="kwinject.out"/>
     </f:entry>
-    <f:entry title="${%Incremental Analysis}" field="incrementalAnalysis">
-      <f:checkbox default="true"/>
+
+
+    <j:set var="analysisTypeValue" value="${instance.analysisType==null ? 'incremental' : instance.analysisType}" />
+
+    <f:entry title="" description="">
+        <table width="100%">
+            <f:radioBlock checked="${analysisTypeValue=='incremental'}" name="analysisType" title="${%Incremental Analysis}" value="incremental" inline="true">
+            </f:radioBlock>
+            <f:radioBlock checked="${analysisTypeValue=='manual'}" name="analysisType" title="${%Full Rebuild}" value="force" inline="true">
+            </f:radioBlock>
+            <f:radioBlock checked="${analysisTypeValue=='none'}" name="analysisType" title="${%None}" value="none" inline="true">
+            </f:radioBlock>
+        </table>
     </f:entry>
 
     <f:advanced>

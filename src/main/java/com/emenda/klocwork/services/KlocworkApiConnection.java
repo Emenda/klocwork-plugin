@@ -1,5 +1,6 @@
 package com.emenda.klocwork.services;
 
+import com.emenda.klocwork.KlocworkLogger;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 

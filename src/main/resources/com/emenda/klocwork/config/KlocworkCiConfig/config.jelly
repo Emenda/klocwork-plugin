@@ -28,6 +28,12 @@
                 </tr>
             </table>
         </f:entry>
+        <f:entry title="${%Ignore Build Errors}" field="ignoreBuildErrors">
+            <f:checkbox default="true"/>
+        </f:entry>
+        <f:entry title="${%Ignore Parse Errors}" field="ignoreParseErrors">
+            <f:checkbox default="true"/>
+        </f:entry>
         <f:entry title="${%XML Report File}" field="reportFile">
             <f:textbox/>
         </f:entry>

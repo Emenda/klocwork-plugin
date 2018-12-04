@@ -17,9 +17,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 
 public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
 
@@ -88,6 +86,7 @@ public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
             }
             String diffList = "";
             // should we perform incremental analysis?
+
             if (ciConfig.getIncrementalAnalysis()) {
                 logger.logMessage("Performing incremental analysis using " +
                 "change list specified in " + ciConfig.getDiffFileList(envVars));
@@ -148,6 +147,52 @@ public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
             }
             else{
                 logger.logMessage("Unable to generate diff analysis output");
+            }
+            if (!ciConfig.isIgnoreBuildErrors()) {
+                FilePath logs =  new FilePath(workspace.child(".kwlp") .child("workingcache"), "tables");
+                FilePath buildLog = new FilePath(logs, "build.log");
+                boolean buildError = false;
+                FileReader read;
+                BufferedReader input;
+                try {
+                    int lineNumber = 0;
+                    int buildErrorLine = 0;
+                    read = new FileReader(buildLog.getRemote());
+                    input = new BufferedReader(read);
+                    String line;
+                    while (true) {
+                        line = input.readLine();
+                        if (line == null) {
+                            break;
+                        }
+                        else {
+                            lineNumber++;
+                            if (line.matches("Build errors summary:")) {
+                                buildError = true;
+                                buildErrorLine = lineNumber;
+                            }
+                            if (line.matches(".*parse error.*")) {
+                                if (lineNumber == buildErrorLine+2) {
+                                    buildError = false;
+                                }
+                            }
+                        }
+                    }
+                    read.close();
+                    input.close();
+                }
+                catch (IOException e) {e.printStackTrace();}
+                if (buildError) {
+                    throw new AbortException("Build contains error(s), aborting build.");
+                }
+            }
+
+            if (!ciConfig.isIgnoreParseErrors()) {
+                FilePath logs =  new FilePath(workspace.child(".kwlp") .child("workingcache"), "tables");
+                FilePath parseLog = new FilePath(logs, "parse_errors.log");
+                if (parseLog.length() != 0) {
+                    throw new AbortException("Build contains parse error(s), aborting build.");
+                }
             }
         }  catch (IOException | InterruptedException ex) {
             throw new AbortException(ex.getMessage());
