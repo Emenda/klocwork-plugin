@@ -11,6 +11,8 @@ public class KlocworkConstants {
 
     public static final String KLOCWORK_BUILD_SPEC_DISPLAY_NAME =
             "Klocwork - (step 1 - capture) Capture Build Information";
+    public static final String KLOCWORK_SERVER_AVAILABILITY_CHECK_DISPLAY_NAME =
+            "Klocwork - Test Server Availability";
     public static final String KLOCWORK_SERVER_ANALYSIS_DISPLAY_NAME =
         "Klocwork - (step 2 - analysis) Full Integration Analysis";
     public static final String KLOCWORK_SERVER_LOAD_DISPLAY_NAME =
