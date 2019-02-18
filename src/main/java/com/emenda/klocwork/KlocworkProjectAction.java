@@ -7,6 +7,7 @@ import com.emenda.klocwork.util.KlocworkUtil;
 
 import java.util.List;
 import java.util.ArrayList;
+import org.apache.commons.lang3.StringUtils;
 
 public class KlocworkProjectAction implements Action {
 
@@ -16,21 +17,34 @@ public class KlocworkProjectAction implements Action {
         this.job = job;
     }
 
+    @Override
     public String getIconFileName() {
         return KlocworkConstants.ICON_URL;
     }
 
+    @Override
     public String getDisplayName() {
         return KlocworkConstants.DISPLAY_NAME;
     }
 
+    @Override
     public String getUrlName() {
         KlocworkBuildAction buildAction = getLatestBuildAction();
         if (buildAction != null) {
-            return KlocworkUtil.getIssueListUrl(buildAction.getKlocworkURL(), buildAction.getKlocworkProject());
+            String klocworkProjectId = buildAction.getKlocworkProjectId();
+
+            if (( klocworkProjectId == null) || StringUtils.isEmpty(klocworkProjectId))
+            {
+                return KlocworkUtil.getIssueListUrl(buildAction.getKlocworkURL(), buildAction.getKlocworkProject());
+            }
+            else
+            {
+                return KlocworkUtil.getIssueListUrl(buildAction.getKlocworkURL(), buildAction.getKlocworkProjectId());
+            }
         }
         return "";
     }
+
 
     public String getChartWidth() {
         return getLatestBuildAction().getChartWidth();
@@ -51,7 +65,7 @@ public class KlocworkProjectAction implements Action {
 
         // labels are builds
         // each dataset is critical, error, etc issues for each build...
-        List<String> labels = new ArrayList<String>();
+        List<String> labels = new ArrayList<>();
         JSONObject criticalIssuedata = new JSONObject();
         JSONObject errorIssuedata = new JSONObject();
         JSONObject warningIssuedata = new JSONObject();

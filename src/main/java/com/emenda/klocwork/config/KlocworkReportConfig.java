@@ -1,7 +1,6 @@
 
 package com.emenda.klocwork.config;
 
-import com.emenda.klocwork.KlocworkConstants;
 
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
@@ -67,15 +66,16 @@ public class KlocworkReportConfig extends AbstractDescribableImpl<KlocworkReport
 
     @Extension
     public static class DescriptorImpl extends Descriptor<KlocworkReportConfig> {
+        @Override
         public String getDisplayName() { return null; }
         public static String getDefaultChartQuery() {
             return DEFAULT_CHART_QUERY;
         }
-    
+
         public static String getDefaultChartHeight() {
             return DEFAULT_CHART_HEIGHT;
         }
-    
+
         public static String getDefaultChartWidth() {
             return DEFAULT_CHART_WIDTH;
         }

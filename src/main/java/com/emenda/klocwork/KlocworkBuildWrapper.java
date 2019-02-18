@@ -31,6 +31,7 @@ public class KlocworkBuildWrapper extends SimpleBuildWrapper {
     private final String serverConfig;
     private final String installConfig;
     private final String serverProject;
+    private String serverProjectId;
     private final String ltoken;
 
     @DataBoundConstructor
@@ -40,6 +41,7 @@ public class KlocworkBuildWrapper extends SimpleBuildWrapper {
         this.installConfig = installConfig;
         this.serverProject = serverProject;
         this.ltoken = ltoken;
+        this.serverProjectId = serverProject;
     }
 
     @Override
@@ -96,6 +98,12 @@ public class KlocworkBuildWrapper extends SimpleBuildWrapper {
                 context.env(KlocworkConstants.KLOCWORK_PROJECT, serverProject);
             }
 
+            if (StringUtils.isEmpty(serverProjectId)) {
+                context.env(KlocworkConstants.KLOCWORK_PROJECT_ID, serverProject);
+            } else {
+                context.env(KlocworkConstants.KLOCWORK_PROJECT_ID, serverProjectId);
+            }
+
             if (install != null) {
                 logger.logMessage("Adding Klocwork paths. Using install \""
                 + install.getName() + "\"");
@@ -120,6 +128,18 @@ public class KlocworkBuildWrapper extends SimpleBuildWrapper {
     public String getServerConfig() { return serverConfig; }
     public String getInstallConfig() { return installConfig; }
     public String getServerProject() { return serverProject; }
+
+    public String getServerProjectId() {
+        return serverProjectId;
+    }
+
+    @DataBoundSetter
+    public void setServerProjectId(String serverProjectId) {
+        this.serverProjectId = serverProjectId;
+    }
+
+
+
     public String getLtoken() { return ltoken; }
 
     public final static String getNoneValue() { return "-- none --"; }
@@ -135,17 +155,19 @@ public class KlocworkBuildWrapper extends SimpleBuildWrapper {
 
          private String globalLicenseHost;
          private String globalLicensePort;
-         private List<KlocworkServerConfig> serverConfigs = new ArrayList<KlocworkServerConfig>();
-         private List<KlocworkInstallConfig> installConfigs = new ArrayList<KlocworkInstallConfig>();
+         private List<KlocworkServerConfig> serverConfigs = new ArrayList<>();
+         private List<KlocworkInstallConfig> installConfigs = new ArrayList<>();
 
         public DescriptorImpl() {
             load();
         }
 
+         @Override
         public boolean isApplicable(AbstractProject<?, ?> item) {
             return true;
         }
 
+         @Override
         public String getDisplayName() {
             return KlocworkConstants.KLOCWORK_BUILD_WRAPPER_DISPLAY_NAME;
         }

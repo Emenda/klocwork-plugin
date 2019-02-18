@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 import java.util.List;
+import org.apache.commons.lang3.StringUtils;
 
 public class KlocworkBuildAction implements Action, SimpleBuildStep.LastBuildAction {
 
@@ -25,10 +26,15 @@ public class KlocworkBuildAction implements Action, SimpleBuildStep.LastBuildAct
     private final String buildName;
     private final String klocworkURL;
     private final String klocworkProject;
+    private final String klocworkProjectId;
     private final KlocworkReportConfig reportConfig;
 
-    public KlocworkBuildAction(Run<?, ?> run, Map<String, Integer> severityMap, EnvVars envVars, String buildName,
-            KlocworkReportConfig reportConfig) {
+    public KlocworkBuildAction(Run<?, ?> run,
+            Map<String, Integer> severityMap,
+            EnvVars envVars,
+            String buildName,
+            KlocworkReportConfig reportConfig
+    ) {
         this.run = run;
         this.criticalCount = severityMap.getOrDefault(KlocworkConstants.KLOCWORK_ISSUE_CRITICAL, 0);
         this.errorCount = severityMap.getOrDefault(KlocworkConstants.KLOCWORK_ISSUE_ERROR, 0);
@@ -37,6 +43,7 @@ public class KlocworkBuildAction implements Action, SimpleBuildStep.LastBuildAct
         this.buildName = KlocworkUtil.getDefaultBuildName(buildName, envVars);
         this.klocworkURL = KlocworkUtil.getNormalizedKlocworkUrl(envVars);
         this.klocworkProject = envVars.get(KlocworkConstants.KLOCWORK_PROJECT);
+        this.klocworkProjectId = envVars.get(KlocworkConstants.KLOCWORK_PROJECT_ID);
         this.reportConfig = reportConfig;
     }
 
@@ -44,17 +51,27 @@ public class KlocworkBuildAction implements Action, SimpleBuildStep.LastBuildAct
         return run;
     }
 
+    @Override
     public String getIconFileName() {
         return KlocworkConstants.ICON_URL;
     }
 
+    @Override
     public String getDisplayName() {
         return KlocworkConstants.DISPLAY_NAME;
     }
 
+    @Override
     public String getUrlName() {
         try {
-            return KlocworkUtil.getBuildIssueListUrl(klocworkURL, klocworkProject, buildName);
+            if ((klocworkProjectId == null) || StringUtils.isEmpty(klocworkProjectId))
+            {
+                return KlocworkUtil.getBuildIssueListUrl(klocworkURL, klocworkProject, buildName);
+            }
+            else
+            {
+                return KlocworkUtil.getBuildIssueListUrl(klocworkURL, klocworkProjectId, buildName);
+            }
         } catch (UnsupportedEncodingException ex) {
             return null;
         }
@@ -86,6 +103,10 @@ public class KlocworkBuildAction implements Action, SimpleBuildStep.LastBuildAct
 
     public String getKlocworkProject() {
         return klocworkProject;
+    }
+
+    public String getKlocworkProjectId() {
+        return klocworkProjectId;
     }
 
     public boolean isDisplayChart() {
