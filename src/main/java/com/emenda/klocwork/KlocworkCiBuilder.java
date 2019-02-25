@@ -85,7 +85,7 @@ public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
                         workspace, envVars,
                         ciConfig.getCiToolSetCmd(envVars, workspace));
             }
-            String diffList = "";
+//            String diffList = "";
             // should we perform incremental analysis?
             if (ciConfig.getIncrementalAnalysis()) {
                 logger.logMessage("Performing incremental analysis using " +
@@ -104,38 +104,48 @@ public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
 
                 // check diff file list and get list of files to analyse, if none,
                 // diffList will be empty
-                diffList = ciConfig.getCiToolDiffList(envVars, workspace, launcher);
+//                diffList = ciConfig.getCiToolDiffList(envVars, workspace, launcher);
                 // if there are files to analyse, run kwcheck run
-                if (!StringUtils.isEmpty(diffList)) {
+//                if (!StringUtils.isEmpty(diffList)) {
                     KlocworkUtil.executeCommand(launcher, listener,
                             workspace, envVars,
-                            ciConfig.getCiToolRunCmd(envVars, workspace, diffList));
-                }
-                else{
-                    // we do not need to do anything!
-                    logger.logMessage("Incremental analysis did not detect any " +
-                            "changed files in the build specification. Skipping the analysis");
-                }
+//                            ciConfig.getCiToolRunCmd(envVars, workspace, diffList));
+                            ciConfig.getCiToolRunCmd(envVars, workspace, ciConfig.getDiffFileList(envVars)));
+//                }
+//                else{
+//                    // we do not need to do anything!
+//                    logger.logMessage("Incremental analysis did not detect any " +
+//                            "changed files in the build specification. Skipping the analysis");
+//                }
             }
             else{
                 KlocworkUtil.executeCommand(launcher, listener,
                         workspace, envVars,
-                        ciConfig.getCiToolRunCmd(envVars, workspace, diffList));
+                        ciConfig.getCiToolRunCmd(envVars, workspace, ""));
             }
 
-            // Output any local issues
-            ByteArrayOutputStream kwcheckListOutputStream = KlocworkUtil.executeCommandParseOutput(launcher,
-                    workspace, envVars,
-                    ciConfig.getCiToolListCmd(envVars, workspace, diffList));
-            if(kwcheckListOutputStream != null){
+            //check diff list exists
+            ByteArrayOutputStream kwcheckListOutputStream;
+            if (ciConfig.getIncrementalAnalysis()) {
+                // Output any local issues
+                kwcheckListOutputStream = KlocworkUtil.executeCommandParseOutput(launcher,
+                        workspace, envVars,
+                        ciConfig.getCiToolListCmd(envVars, workspace, ciConfig.getDiffFileList(envVars)));
+            }
+            else{
+                kwcheckListOutputStream = KlocworkUtil.executeCommandParseOutput(launcher,
+                        workspace, envVars,
+                        ciConfig.getCiToolListCmd(envVars, workspace, ""));
+            }
+
+            if (kwcheckListOutputStream != null) {
                 FilePath xmlReport;
                 String path = envVars.expand(KlocworkUtil.getDefaultKwcheckReportFile(ciConfig.getReportFile()));
                 File isAbs = new File(path);
-                if(isAbs.isAbsolute()){
-                    xmlReport = new FilePath (launcher.getChannel(), path);
-                }
-                else{
-                    xmlReport = new FilePath (workspace, path);
+                if (isAbs.isAbsolute()) {
+                    xmlReport = new FilePath(launcher.getChannel(), path);
+                } else {
+                    xmlReport = new FilePath(workspace, path);
                 }
                 KlocworkUtil.generateKwListOutput(
                         xmlReport,
@@ -144,9 +154,7 @@ public class KlocworkCiBuilder extends Builder implements SimpleBuildStep {
                         ciConfig.getCiTool(),
                         launcher
                 );
-
-            }
-            else{
+            } else {
                 logger.logMessage("Unable to generate diff analysis output");
             }
         }  catch (IOException | InterruptedException ex) {
